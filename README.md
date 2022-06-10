@@ -142,6 +142,8 @@ Deployment of a self managed osdu instance is performed by executing github acti
 
 5. __[Stamp Load](../../actions/workflows/stamp-load.yaml)__: This action initializes the partition and loads the necessary data into the Stamp to allow it to fully function. (ie: Entitlements, Schemas, Workflow)  _(Time: ~20m)_
 
+> Note: On the first run, both the "Common Schema Load" and "Workflow Load" substeps will fail. The solution is to re-run all steps (not just the failed steps) and it will work correctly on the second run.
+
 6. __[Stamp Uninstall](../../actions/workflows/stamp-uninstall.yaml)__: This action uninstalls the OSDU Stamp and requires Github Secrets used as Feature Flags to enable the activity.
 
   - Secret: UNINSTALL - This secret will trigger the feature flag to perform a software uninstall.
