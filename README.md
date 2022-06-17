@@ -37,7 +37,7 @@ __Manually Created Secrets__
 
 ```bash
 SUBSCRIPTION_ID=$(az account show --query id --output tsv)
-AZURE_CREDENTIALS="self-managed-osdu-azure-credentials-$(az account show --query user.name -otsv | awk -F "@" '{print $1}')"
+AZURE_CREDENTIALS="self-managed-osdu-azure-credentials-$(az account show --query user.name -otsv | awk '/@/{split($0,a,"@"); output=a[1];} /#/{split(output,b,"#"); output=b[2];} {print output};')"
 
 az ad sp create-for-rbac --name $AZURE_CREDENTIALS \
   --role "Owner" \
@@ -64,7 +64,7 @@ az ad sp create-for-rbac --name $AZURE_CREDENTIALS \
 
 ```bash
 SUBSCRIPTION_ID=$(az account show --query id --output tsv)
-OSDU_CREDENTIALS="self-managed-osdu-stamp-credentials-$(az account show --query user.name -otsv | awk -F "@" '{print $1}')"
+OSDU_CREDENTIALS="self-managed-osdu-stamp-credentials-$(az account show --query user.name -otsv | awk '/@/{split($0,a,"@"); output=a[1];} /#/{split(output,b,"#"); output=b[2];} {print output};')"
 
 az ad sp create-for-rbac --name $OSDU_CREDENTIALS \
   --role "Contributor" \
@@ -90,18 +90,18 @@ az ad sp create-for-rbac --name $OSDU_CREDENTIALS \
 5. `OSDU_CREDENTIAL_OID`: The Object ID of the _OSDU_CREDENTIALS_ Service Principal.
 
 ```bash
-az ad sp list --display-name $OSDU_CREDENTIALS --query [].objectId -otsv
+az ad sp list --display-name $OSDU_CREDENTIALS --query [].id -otsv
 ```
 
 6. `OSDU_APPLICATION`: The json output of an Azure AD Application.
 
 ```bash
-OSDU_APPLICATION="self-managed-osdu-stamp-application-$(az account show --query user.name -otsv | awk -F "@" '{print $1}')"
+OSDU_APPLICATION="self-managed-osdu-stamp-application-$(az account show --query user.name -otsv | awk '/@/{split($0,a,"@"); output=a[1];} /#/{split(output,b,"#"); output=b[2];} {print output};')"
 
 az ad app create --display-name $OSDU_APPLICATION \
   --oauth2-allow-implicit-flow \
   --required-resource-accesses @configuration/manifest.json \
-  --query '{appId:appId, displayName:displayName, objectId:objectId}' \
+  --query '{appId:appId, displayName:displayName, objectId:objectId, id:id}' \
   -ojson
 
 
@@ -109,7 +109,8 @@ az ad app create --display-name $OSDU_APPLICATION \
 {
   "appId": "00000000-0000-0000-0000-000000000000",
   "displayName": "osdu-application",
-  "objectId": "00000000-0000-0000-0000-000000000000"
+  "objectId": "00000000-0000-0000-0000-000000000000",
+  "id": "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -133,11 +134,15 @@ Deployment of a self managed osdu instance is performed by executing github acti
 
 3. __[Stamp Provision](../../actions/workflows/stamp-provision.yaml)__: This action provisions resources for the Deployment Stamp.  _(Time: ~1h)_
 
+> Note: On the first run, this step will fail with an Elasticsearch-related error on the sub-step "Provision - Partition". The solution is to re-run all steps (not just the failed steps) and it will work correctly on the second run.
+
 4. __[Stamp Install](../../actions/workflows/stamp-configure.yaml)__: This action initializes the Software Configuration process of the Deployment Stamp and the software deployment occurs after pipeline completion.  _(Time: ~20m)_
 
-> Note: Prior to running the Stamp Load due to a recent change in Azure AD Applications the AD Application needs to be approved for access.  This can be done by accessing the Login Page. Access the $DNS_HOST/login
+> Note: Prior to running the Stamp Load due to a recent change in Azure AD Applications the AD Application needs to be approved for access.  This can be done by accessing the Login Page. Access the $AZURE_DNS_HOST/login
 
 5. __[Stamp Load](../../actions/workflows/stamp-load.yaml)__: This action initializes the partition and loads the necessary data into the Stamp to allow it to fully function. (ie: Entitlements, Schemas, Workflow)  _(Time: ~20m)_
+
+> Note: On the first run, both the "Common Schema Load" and "Workflow Load" substeps will fail. The solution is to re-run all steps (not just the failed steps) and it will work correctly on the second run.
 
 6. __[Stamp Uninstall](../../actions/workflows/stamp-uninstall.yaml)__: This action uninstalls the OSDU Stamp and requires Github Secrets used as Feature Flags to enable the activity.
 
