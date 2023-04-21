@@ -43,7 +43,8 @@ jobs:
           resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
 
       - name: Install Flux
-        run: export FLUX_VERSION=0.27.4 && curl -s https://fluxcd.io/install.sh | bash;
+        run: |
+            export FLUX_VERSION=0.41.2 && curl -s https://fluxcd.io/install.sh | bash;
 
       - name: Bootstrap Flux
         run: flux bootstrap github --owner=${{ github.repository_owner }} --repository=$(echo $GITHUB_REPOSITORY | cut -d'/' -f2	) --branch=${{ github.ref_name }} --path=./clusters/${{ env.CLUSTER }}
@@ -72,7 +73,7 @@ jobs:
         run: |
           cat > $GITHUB_WORKSPACE/clusters/$CLUSTER/sealed-secrets.yaml <<EOF
           ---
-          apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+          apiVersion: kustomize.toolkit.fluxcd.io/v1
           kind: Kustomization
           metadata:
             name: sealed-secrets
@@ -96,12 +97,12 @@ jobs:
           flux create source git helm-charts-azure \
             --url https://community.opengroup.org/osdu/platform/deployment-and-operations/helm-charts-azure \
             --interval 1m \
-            --branch release/0.12 \
+            --branch release/0.20 \
             --export > $GITHUB_WORKSPACE/clusters/$CLUSTER/helm-charts-azure.yaml
 
           cat > $GITHUB_WORKSPACE/clusters/$CLUSTER/osdu-stamp.yaml <<EOF
           ---
-          apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+          apiVersion: kustomize.toolkit.fluxcd.io/v1
           kind: Kustomization
           metadata:
             name: osdu-stamp
@@ -1933,6 +1934,7 @@ jobs:
       - name: GitOps CheckIn
         uses: EndBug/add-and-commit@v7
         with:
+          token: ${{ secrets.GH_REPO_TOKEN }}
           message: 'Initialize Software Install'
           add: '.'
 
@@ -2225,12 +2227,13 @@ jobs:
         run: |
           echo "Checking Deployment Exists"
           echo "----------------------------------------"
+          echo $(kubectl get deployments -n airflow)
           attempt_counter=0
           max_attempts=30
           until kubectl get deployment appinsights-statsd -n airflow
           do
             if [ ${attempt_counter} -eq ${max_attempts} ];then
-              echo "Deployment Image not updated, integration tests are skipped"
+              echo "Deployment Image not updated 1, integration tests are skipped"
               exit 1
             fi
             attempt_counter=$(($attempt_counter+1))
@@ -2239,12 +2242,13 @@ jobs:
 
           echo "Checking Deployment Exists"
           echo "----------------------------------------"
+          echo $(kubectl get deployments)
           attempt_counter=0
           max_attempts=30
           until kubectl get deployment default -n osdu-azure
           do
             if [ ${attempt_counter} -eq ${max_attempts} ];then
-              echo "Deployment Image not updated, integration tests are skipped"
+              echo "Deployment Image not updated 2, integration tests are skipped"
               exit 1
             fi
             attempt_counter=$(($attempt_counter+1))

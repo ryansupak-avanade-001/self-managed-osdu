@@ -1,0 +1,25 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: self-managed-base
+  namespace: osdu-azure
+spec:
+  values:
+    fullnameOverride: osdu-svc
+    azure:
+      tenant: 9f784c1c-28b2-4cef-8ac3-c503e04c906a
+      subscription: 46932cf8-37d9-4d41-98f8-1bf4bec9dbaf
+      resourcegroup: osdu-self-cplhdge-7ze1-rg
+      identity: osdu-self-cplhdge-7ze1-osdu-identity
+      identity_id: 8b6b9d50-b6a2-4b11-9560-d0a732c3182a
+      keyvault: osdu-self-cplhdg-7ze1-kv
+      appid: 5002b947-492a-42c4-88db-cd3777cc8688
+      oidAuthEnabled: false
+    resourceLimits:
+      defaultCpuRequests: "100m"
+      defaultMemoryRequests: "800Mi"
+      defaultCpuLimits: "1000m"
+      defaultMemoryLimits: "2Gi"
+    identity:
+      name: osdu-identity
